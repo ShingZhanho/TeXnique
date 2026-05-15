@@ -267,7 +267,7 @@ function validateProblem() {
     }
 
 
-    if ($("#target").width() != $("#out").width()) {
+    if ($("#target").width() !== $("#out").width()) {
         // Return if the element widths are different.
         return;
     }
@@ -278,7 +278,7 @@ function validateProblem() {
         let height = targetCanvas.height;
         let targetData = targetCanvas.getContext("2d").getImageData(0, 0, width, height);
         html2canvas($('#out')[0], {}).then(function (outCanvas) {
-            if (outCanvas.width != width || outCanvas.height != height) {
+            if (outCanvas.width !== width || outCanvas.height !== height) {
               console.log("doesn't match");
               return;
             }
@@ -286,7 +286,7 @@ function validateProblem() {
             let diff = pixelmatch(targetData.data, outData.data, undefined, width, height, {threshold: 0.1});
             let result = "";
             console.log("diff is " + diff)
-            if (diff == 0) {
+            if (diff === 0) {
                 markProblemCorrect(curTarget);
             }
         });
