@@ -11,6 +11,7 @@ let numCorrect = 0;
 let problemsOrder;
 let debug = false;
 let lastTarget = '';
+let currentTargetCanonical = '';
 let mobile = false;
 let showShadow = false;
 let skippedProblems = [];
@@ -192,6 +193,7 @@ function loadProblem() {
     let problemText = "Problem " + problemNumber + ": " + target.title;
     $("#problem-title").text(problemText);
     problemPoints = Math.ceil(target.latex.length / 10.0);
+    currentTargetCanonical = canonicalize(target.latex);
     let pointsText = "(" + problemPoints + ((problemPoints == 1) ? " point)" : " points)");
     $("#problem-points").text(pointsText);
 
@@ -218,9 +220,31 @@ function normalize(input) {
   return input;
 }
 
+function canonicalize(input) {
+  return minify(normalize(input));
+}
+
+function markProblemCorrect(curTarget) {
+    if (lastTarget === curTarget) {
+      return;
+    }
+
+    lastTarget = curTarget;
+    currentScore += problemPoints;
+    numCorrect += 1;
+
+    // Styling changes
+    $('#out').parent().addClass("correct");
+    $('#user-input').prop("disabled", true);
+    $("#score").text(currentScore);
+
+    // Load new problem
+    setTimeout(loadProblem, 1500);
+}
+
 function validateProblem() {
-    let currentVal = normalize($("#user-input").val());
-    if (currentVal == oldVal) {
+    let currentVal = canonicalize($("#user-input").val());
+    if (currentVal === oldVal) {
         return; // check to prevent multiple simultaneous triggers
     }
 
@@ -231,13 +255,19 @@ function validateProblem() {
         displayMode: true
     });
 
-    if (currentVal == '') {
+    if (currentVal === '') {
       // Defensively return if the input is empty.
       return;
     }
 
+    let curTarget = $('#problem-title').text();
+    if (currentVal === currentTargetCanonical) {
+        markProblemCorrect(curTarget);
+        return;
+    }
 
-    if ($("#target").width() != $("#out").width()) {
+
+    if ($("#target").width() !== $("#out").width()) {
         // Return if the element widths are different.
         return;
     }
@@ -247,9 +277,8 @@ function validateProblem() {
         let width = targetCanvas.width;
         let height = targetCanvas.height;
         let targetData = targetCanvas.getContext("2d").getImageData(0, 0, width, height);
-        let curTarget = $('#problem-title').text();
         html2canvas($('#out')[0], {}).then(function (outCanvas) {
-            if (outCanvas.width != width || outCanvas.height != height) {
+            if (outCanvas.width !== width || outCanvas.height !== height) {
               console.log("doesn't match");
               return;
             }
@@ -257,21 +286,8 @@ function validateProblem() {
             let diff = pixelmatch(targetData.data, outData.data, undefined, width, height, {threshold: 0.1});
             let result = "";
             console.log("diff is " + diff)
-            if (diff == 0) {
-                if (lastTarget == curTarget) {
-                  return;
-                }
-                lastTarget = curTarget;
-                currentScore += problemPoints;
-                numCorrect += 1;
-
-                // Styling changes
-                $('#out').parent().addClass("correct");
-                $('#user-input').prop("disabled", true);
-                $("#score").text(currentScore);
-
-                // Load new problem
-                setTimeout(loadProblem, 1500);
+            if (diff === 0) {
+                markProblemCorrect(curTarget);
             }
         });
     });
